@@ -21,13 +21,20 @@ class Document implements IDocument {
         $this->setConnectionOptions($connectionOptions);
     }
 
-
     public function setTemplateId($templateId) {
         $this->templateId = $templateId;
         return $this;
     }
     public function getTemplateId() {
         return $this->templateId;
+    }
+
+    public function setPriority($priority) {
+        $this->priority = $priority;
+        return $this;
+    }
+    public function getPriority() {
+        return $this->priority;
     }
 
     public function setConnectionOptions($connectionOptions) {
@@ -47,12 +54,20 @@ class Document implements IDocument {
         if (isset($this->fields[$fieldName])) {
             return $this->fields[$fieldName];
         }
-
         return null;
     }
 
     public function getFields() {
         return $this->fields;
+    }
+
+    public function setTable($tableName, $tableContent) {
+        $this->setField("table-" . $tableName, $tableContent);
+        return $this;
+    }
+
+    public function getTable($tableName) {
+        return $this->getField("table-" . $tableName);
     }
 
 
@@ -66,6 +81,9 @@ class Document implements IDocument {
         return http_build_query($post);
     }
 
+    /**
+     * @todo Use HttpRequest or helper class
+     * */
     protected static function performRequest($connectionURL, $postData) {
 
         $ch = curl_init();
