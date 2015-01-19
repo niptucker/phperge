@@ -20,12 +20,12 @@
          processIsolation="false"
          stopOnFailure="false"
          syntaxCheck="false"
-         bootstrap="./tests/PHPerge/Tests/TestInit.php"
+         bootstrap="./tests/TestInit.php"
 >
 
     <testsuites>
         <testsuite name="PHPerge Test Suite">
-            <directory>./tests/PHPerge/Tests</directory>
+            <directory>./tests</directory>
         </testsuite>
     </testsuites>
 <!--

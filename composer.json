@@ -21,6 +21,8 @@
     },
 
     "autoload": {
-        "psr-0": { "PHPerge\\": "lib/" }
+        "psr-4": {
+            "PHPerge\\":        "lib/"
+        }
     }
 }
