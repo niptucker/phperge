@@ -18,7 +18,7 @@ $doc = new \PHPerge\Document("sample", $connection);
 $doc->setField("QUICKLY", "непосредственно");
 
 $doc->setField("CAN", "0");
-$doc->setImage("PIC", base64_encode(file_get_contents("pic.jpg")));
+$doc->setField("@PIC", base64_encode(file_get_contents("pic.jpg")));
 
 // set table content
 // 'STRUCTURE' is table name in the .odt file
