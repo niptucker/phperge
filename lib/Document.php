@@ -3,7 +3,7 @@
 namespace PHPerge;
 
 /**
- * Wrapper class for document data present
+ * Wrapper class for request sending to the Verge Server
  */
 class Document implements IDocument {
 
@@ -15,7 +15,7 @@ class Document implements IDocument {
     const PRIORITY_HIGH = "high";
 
     /**
-     * Id of template in the Verge App
+     * Id of template in the Verge Server
      * @var string
      */
     protected $templateId;
@@ -34,11 +34,15 @@ class Document implements IDocument {
     protected $priority = self::PRIORITY_NORMAL;
 
     /**
-     * Array of fields, which is sent to the Verge App as json
+     * Array of fields sent to the Verge Server as JSON
      * @var array
      */
     protected $fields = array();
 
+    /**
+     * Array of field descriptions
+     * @var array
+     */
     protected $fieldDescriptions = array();
 
     /**
@@ -90,23 +94,41 @@ class Document implements IDocument {
     }
 
     public function setField($fieldName, $fieldValue) {
+        $fieldName = strtoupper($fieldName);
         $this->fields[$fieldName] = $fieldValue;
         return $this;
     }
 
     public function getField($fieldName) {
+        $fieldName = strtoupper($fieldName);
         if (isset($this->fields[$fieldName])) {
             return $this->fields[$fieldName];
         }
         return null;
     }
 
+    public function setFragmentPresence($fragmentName, $isPresented) {
+        $fragmentName = strtoupper($fragmentName);
+        $this->fields["#" . $fragmentName] = (int)$isPresented;
+        return $this;
+    }
+
+    public function getFragmentPresence($fragmentName) {
+        $fragmentName = strtoupper($fragmentName);
+        if (isset($this->fields["#" . $fragmentName])) {
+            return $this->fields["#" . $fragmentName];
+        }
+        return null;
+    }
+
     public function setEnum($fieldName, $fieldValue) {
+        $fieldName = strtoupper($fieldName);
         $this->fields[$fieldName] = $fieldValue;
         return $this;
     }
 
     public function getEnum($fieldName) {
+        $fieldName = strtoupper($fieldName);
         if (isset($this->fields[$fieldName])) {
             return $this->fields[$fieldName];
         }
@@ -114,11 +136,13 @@ class Document implements IDocument {
     }
 
     public function setImage($imageName, $imageContent) {
+        $imageName = strtoupper($imageName);
         $this->fields["@" . $imageName] = $imageContent;
         return $this;
     }
 
     public function getImage($imageName) {
+        $imageName = strtoupper($imageName);
         if (isset($this->fields["@" . $imageName])) {
             return $this->fields["@" . $imageName];
         }
@@ -126,11 +150,13 @@ class Document implements IDocument {
     }
 
     public function setTable($tableName, $tableContent) {
+        $tableName = strtoupper($tableName);
         $this->fields["table-" . $tableName] = $tableContent;
         return $this;
     }
 
     public function getTable($tableName) {
+        $tableName = strtoupper($tableName);
         if (isset($this->fields["table-" . $tableName])) {
             return $this->fields["table-" . $tableName];
         }
@@ -140,11 +166,13 @@ class Document implements IDocument {
 
 
     public function setFieldDescription($fieldName, $fieldDescription) {
+        $fieldName = strtoupper($fieldName);
         $this->fieldDescriptions[$fieldName] = $fieldDescription;
         return $this;
     }
 
     public function getFieldDescription($fieldName) {
+        $fieldName = strtoupper($fieldName);
         if (isset($this->fieldDescriptions[$fieldName])) {
             return $this->fieldDescriptions[$fieldName];
         }
@@ -152,11 +180,13 @@ class Document implements IDocument {
     }
 
     public function setEnumDescription($fieldName, $fieldDescription) {
+        $fieldName = strtoupper($fieldName);
         $this->fieldDescriptions[$fieldName] = $fieldDescription;
         return $this;
     }
 
     public function getEnumDescription($fieldName) {
+        $fieldName = strtoupper($fieldName);
         if (isset($this->fieldDescriptions[$fieldName])) {
             return $this->fieldDescriptions[$fieldName];
         }
@@ -164,11 +194,13 @@ class Document implements IDocument {
     }
 
     public function setImageDescription($imageName, $imageDescription) {
+        $imageName = strtoupper($imageName);
         $this->fieldDescriptions["@" . $imageName] = $imageDescription;
         return $this;
     }
 
     public function getImageDescription($imageName) {
+        $imageName = strtoupper($imageName);
         if (isset($this->fieldDescriptions["@" . $imageName])) {
             return $this->fieldDescriptions["@" . $imageName];
         }
@@ -176,13 +208,29 @@ class Document implements IDocument {
     }
 
     public function setTableDescription($tableName, $tableDescription) {
+        $tableName = strtoupper($tableName);
         $this->fieldDescriptions["table-" . $tableName] = $tableDescription;
         return $this;
     }
 
     public function getTableDescription($tableName) {
+        $tableName = strtoupper($tableName);
         if (isset($this->fieldDescriptions["table-" . $tableName])) {
             return $this->fieldDescriptions["table-" . $tableName];
+        }
+        return null;
+    }
+
+    public function setFragmentDescription($fragmentName, $fragmentDescription) {
+        $fragmentName = strtoupper($fragmentName);
+        $this->fieldDescriptions["#" . $fragmentName] = $fragmentDescription;
+        return $this;
+    }
+
+    public function getFragmentDescription($fragmentName) {
+        $fragmentName = strtoupper($fragmentName);
+        if (isset($this->fieldDescriptions["#" . $fragmentName])) {
+            return $this->fieldDescriptions["#" . $fragmentName];
         }
         return null;
     }
@@ -199,7 +247,7 @@ class Document implements IDocument {
 
     /**
      * @todo Use HttpRequest or helper class
-     * */
+     */
     protected static function performRequest($connectionURL, $postData) {
 
         $ch = curl_init();
@@ -223,24 +271,22 @@ class Document implements IDocument {
 
 
     /**
-     * Gets the Template description.
+     * Gets the template description.
      *
      * @return string
      */
-    public function getTemplateDescription()
-    {
+    public function getTemplateDescription() {
         return $this->templateDescription;
     }
 
     /**
-     * Sets the Template description.
+     * Sets the template description.
      *
-     * @param string $templateDescription the description
+     * @param string $templateDescription description of template
      *
      * @return self
      */
-    public function setTemplateDescription($templateDescription)
-    {
+    public function setTemplateDescription($templateDescription) {
         $this->templateDescription = $templateDescription;
 
         return $this;

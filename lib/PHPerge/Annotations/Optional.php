@@ -18,4 +18,5 @@ class Optional {
      * @var string
      */
     public $default;
+
 }

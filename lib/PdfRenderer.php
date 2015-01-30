@@ -28,9 +28,6 @@ class PdfRenderer implements IRenderer {
 
         $this->mapTemplateToDocument();
 
-
-
-        // $this->setTemplateId($templateId);
     }
 
     protected static function getAnnotationReader() {
@@ -74,8 +71,6 @@ class PdfRenderer implements IRenderer {
         if ($this->document instanceof \PHPerge\IDocument) {
             foreach ($this->reflectionTemplateProperties as $reflectionTemplateProperty) {
                 $templatePropertyAnnotation = $this->annotationReader->getPropertyAnnotations($reflectionTemplateProperty);
-                // var_dump("Checking field " . $reflectionTemplateProperty->getName() . ":");
-                // var_dump($templatePropertyAnnotation);
                 $this->readPropertyAnnotations($reflectionTemplateProperty, $templatePropertyAnnotation);
             }
         }
@@ -84,6 +79,9 @@ class PdfRenderer implements IRenderer {
     protected function readPropertyAnnotations($reflectionTemplateProperty, $propertyAnnotation) {
         if (isset($propertyAnnotation["PHPerge\Annotations\String"])) {
             $this->readStringPropertyAnnotation($reflectionTemplateProperty, $propertyAnnotation);
+        }
+        if (isset($propertyAnnotation["PHPerge\Annotations\Fragment"])) {
+            $this->readFragmentPropertyAnnotation($reflectionTemplateProperty, $propertyAnnotation);
         }
         if (isset($propertyAnnotation["PHPerge\Annotations\Enum"])) {
             $this->readEnumPropertyAnnotation($reflectionTemplateProperty, $propertyAnnotation);
@@ -100,7 +98,8 @@ class PdfRenderer implements IRenderer {
         $fieldNameAnnotation = $propertyAnnotation["PHPerge\Annotations\String"];
         if ($fieldNameAnnotation instanceof \PHPerge\Annotations\String) {
 
-            $fieldValue = $this->getTemplateClassProperty($reflectionTemplateProperty->getName());
+            $reflectionTemplateProperty->setAccessible(true);
+            $fieldValue = $reflectionTemplateProperty->getValue($this->templateClass);
 
             $isOptional = false;
             $defaultValue = null;
@@ -120,17 +119,60 @@ class PdfRenderer implements IRenderer {
             }
 
             if (!is_string($fieldValue)) {
-                throw new Exception('Value "' . $fieldValue . '" is not string');
+                throw new Exception('Value "' . $fieldValue . '" is not a string');
             }
-
 
             $this->document->setField($fieldNameAnnotation->fieldName, $fieldValue);
 
-            $fieldDescriptionAnnotation = $propertyAnnotation["PHPerge\Annotations\Description"];
-            if ($fieldDescriptionAnnotation instanceof \PHPerge\Annotations\Description) {
+            if (isset($propertyAnnotation["PHPerge\Annotations\Description"])) {
+                $fieldDescriptionAnnotation = $propertyAnnotation["PHPerge\Annotations\Description"];
+                if ($fieldDescriptionAnnotation instanceof \PHPerge\Annotations\Description) {
 
-                $this->document->setFieldDescription($fieldNameAnnotation->fieldName, $fieldDescriptionAnnotation->description);
+                    $this->document->setFieldDescription($fieldNameAnnotation->fieldName, $fieldDescriptionAnnotation->description);
 
+                }
+            }
+        }
+    }
+
+    protected function readFragmentPropertyAnnotation($reflectionTemplateProperty, $propertyAnnotation) {
+        $fieldNameAnnotation = $propertyAnnotation["PHPerge\Annotations\Fragment"];
+        if ($fieldNameAnnotation instanceof \PHPerge\Annotations\Fragment) {
+
+            $reflectionTemplateProperty->setAccessible(true);
+            $fieldValue = $reflectionTemplateProperty->getValue($this->templateClass);
+
+            $isOptional = false;
+            $defaultValue = null;
+
+            // if (isset($propertyAnnotation["PHPerge\Annotations\Optional"])) {
+            //     $fieldOptionalAnnotation = $propertyAnnotation["PHPerge\Annotations\Optional"];
+            //     if ($fieldOptionalAnnotation instanceof \PHPerge\Annotations\Optional) {
+
+            //         $isOptional = true;
+            //         $defaultValue = $fieldOptionalAnnotation->default;
+
+            //     }
+            // }
+
+            // if (is_null($fieldValue) && $isOptional) {
+            //     $fieldValue = $defaultValue;
+            // }
+
+            if (!is_bool($fieldValue)) {
+                throw new Exception('Value "' . $fieldValue . '" is not boolean');
+            }
+
+
+            $this->document->setFragmentPresence($fieldNameAnnotation->fragmentId, $fieldValue);
+
+            if (isset($propertyAnnotation["PHPerge\Annotations\Description"])) {
+                $fieldDescriptionAnnotation = $propertyAnnotation["PHPerge\Annotations\Description"];
+                if ($fieldDescriptionAnnotation instanceof \PHPerge\Annotations\Description) {
+
+                    $this->document->setFragmentDescription($fieldNameAnnotation->fragmentId, $fieldDescriptionAnnotation->description);
+
+                }
             }
         }
     }
@@ -142,7 +184,9 @@ class PdfRenderer implements IRenderer {
         if ($fieldNameAnnotation instanceof \PHPerge\Annotations\Enum
             && $valuesAnnotation instanceof \PHPerge\Annotations\Values) {
 
-            $fieldValue = $this->getTemplateClassProperty($reflectionTemplateProperty->getName());
+            // $fieldValue = $this->getTemplateClassProperty($reflectionTemplateProperty->getName());
+            $reflectionTemplateProperty->setAccessible(true);
+            $fieldValue = $reflectionTemplateProperty->getValue($this->templateClass);
 
             $isOptional = false;
             $defaultValue = null;
@@ -171,11 +215,13 @@ class PdfRenderer implements IRenderer {
 
             $this->document->setEnum($fieldNameAnnotation->fieldName, $fieldValue);
 
-            $fieldDescriptionAnnotation = $propertyAnnotation["PHPerge\Annotations\Description"];
-            if ($fieldDescriptionAnnotation instanceof \PHPerge\Annotations\Description) {
+            if (isset($propertyAnnotation["PHPerge\Annotations\Description"])) {
+                $fieldDescriptionAnnotation = $propertyAnnotation["PHPerge\Annotations\Description"];
+                if ($fieldDescriptionAnnotation instanceof \PHPerge\Annotations\Description) {
 
-                $this->document->setEnumDescription($fieldNameAnnotation->fieldName, $fieldDescriptionAnnotation->description);
+                    $this->document->setEnumDescription($fieldNameAnnotation->fieldName, $fieldDescriptionAnnotation->description);
 
+                }
             }
         }
     }
@@ -184,7 +230,10 @@ class PdfRenderer implements IRenderer {
         $fieldNameAnnotation = $propertyAnnotation["PHPerge\Annotations\Image"];
         if ($fieldNameAnnotation instanceof \PHPerge\Annotations\Image) {
 
-            $fieldValue = $this->getTemplateClassProperty($reflectionTemplateProperty->getName());
+            // $fieldValue = $this->getTemplateClassProperty($reflectionTemplateProperty->getName());
+            $reflectionTemplateProperty->setAccessible(true);
+            $fieldValue = $reflectionTemplateProperty->getValue($this->templateClass);
+
             if (empty($fieldValue)) {
                 throw new Exception('Image value ("' . $fieldValue . '") cannot be empty: set image path or base64 encode image');
             }
@@ -200,11 +249,13 @@ class PdfRenderer implements IRenderer {
 
             $this->document->setImage($fieldNameAnnotation->imageId, $imageContent);
 
-            $fieldDescriptionAnnotation = $propertyAnnotation["PHPerge\Annotations\Description"];
-            if ($fieldDescriptionAnnotation instanceof \PHPerge\Annotations\Description) {
+            if (isset($propertyAnnotation["PHPerge\Annotations\Description"])) {
+                $fieldDescriptionAnnotation = $propertyAnnotation["PHPerge\Annotations\Description"];
+                if ($fieldDescriptionAnnotation instanceof \PHPerge\Annotations\Description) {
 
-                $this->document->setImageDescription($fieldNameAnnotation->imageId, $fieldDescriptionAnnotation->description);
+                    $this->document->setImageDescription($fieldNameAnnotation->imageId, $fieldDescriptionAnnotation->description);
 
+                }
             }
         }
     }
@@ -224,7 +275,10 @@ class PdfRenderer implements IRenderer {
 
                     $tableContent = array();
 
-                    $tableRows = $this->getTemplateClassProperty($reflectionTemplateProperty->getName());
+                    // $tableRows = $this->getTemplateClassProperty($reflectionTemplateProperty->getName());
+
+                    $reflectionTemplateProperty->setAccessible(true);
+                    $tableRows = $reflectionTemplateProperty->getValue($this->templateClass);
 
                     if (!is_array($tableRows)) {
                         throw new Exception("Table row var is not an array");
@@ -239,7 +293,12 @@ class PdfRenderer implements IRenderer {
                                 $columnNameAnnotation = $rowClassPropertyAnnotation["PHPerge\Annotations\TableColumn"];
                                 if ($columnNameAnnotation instanceof \PHPerge\Annotations\TableColumn) {
 
-                                    $tableContentRow[$columnNameAnnotation->columnName] = self::getObjectProperty($tableRow, $reflectionRowClassProperty->getName());
+
+                                    // $tableRowPropertyValue = self::getObjectProperty($tableRow, $reflectionRowClassProperty->getName());
+                                    $reflectionRowClassProperty->setAccessible(true);
+                                    $tableRowPropertyValue = $reflectionRowClassProperty->getValue($tableRow);
+
+                                    $tableContentRow[$columnNameAnnotation->columnName] = $tableRowPropertyValue;
 
                                 }
                             }

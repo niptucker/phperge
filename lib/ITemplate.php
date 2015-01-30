@@ -3,5 +3,5 @@
 namespace PHPerge;
 
 interface ITemplate {
-    public function render();
+    public function render($connectionOptions);
 }

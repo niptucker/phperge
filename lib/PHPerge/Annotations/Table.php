@@ -26,5 +26,4 @@ class Table {
      */
     public $rowClass;
 
-
 }
