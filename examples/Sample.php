@@ -3,6 +3,7 @@
 namespace PHPerge\Examples;
 
 use PHPerge\Annotations as PHPerge;
+use PHPerge\BasicTemplate;
 
 /**
  * Шаблонный шаблон
@@ -10,7 +11,7 @@ use PHPerge\Annotations as PHPerge;
  * @PHPerge\Id("sample")
  * @PHPerge\Description("Шаблонный шаблон")
  */
-class Sample implements \PHPerge\ITemplate {
+class Sample extends BasicTemplate {
 
     /**
      * Обязательное строковое поле
@@ -225,7 +226,4 @@ class Sample implements \PHPerge\ITemplate {
         return $this;
     }
 
-    public function render() {
-        return (new \PHPerge\PdfRenderer($this, require __DIR__ . '/connection.php'))->render();
-    }
 }

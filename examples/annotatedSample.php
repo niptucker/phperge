@@ -38,4 +38,4 @@ $sample = (new Sample())
         ));
 
 header("Content-Type: application/pdf");
-echo $sample->render();
+echo $sample->render($connection);
