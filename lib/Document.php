@@ -33,6 +33,19 @@ class Document implements IDocument {
      */
     protected $priority = self::PRIORITY_NORMAL;
 
+    protected $isAsync = false;
+
+    protected $callbackUrl;
+
+    protected $renderSessionId;
+
+    protected $isRendered;
+
+    protected $renderStatus;
+    protected $renderStatusCode;
+    protected $renderStatusMessage;
+    protected $renderPercent;
+
     /**
      * Array of fields sent to the Verge Server as JSON
      * @var array
@@ -48,11 +61,111 @@ class Document implements IDocument {
     /**
      * Connection options
      * array(
-     *   "url" => "http://verge.server/verge/app/url"
+     *   "url" => "http://verge.server/verge/app/url",
+     *   "redis" => "tcp://redis.server",
      * )
      * @var array
      */
     protected $connectionOptions = array();
+
+    public static function createFromRenderSessionId($renderSessionId, $connectionOptions) {
+        $doc = new static(null, $connectionOptions);
+        $doc->setRenderSessionId($renderSessionId);
+
+        return $doc;
+    }
+
+
+    public function saveRender($filename) {
+        file_put_contents($filename, $this->getRenderContent());
+    }
+
+    public function isRendered() {
+        return $this->isRendered;
+    }
+
+    protected function setRendered($isRendered) {
+        $this->isRendered = $isRendered;
+
+        return $this;
+    }
+
+    public function getRenderStatus() {
+        return $this->renderStatus;
+    }
+
+    protected function setRenderStatus($renderStatus) {
+        $this->renderStatus = $renderStatus;
+
+        return $this;
+    }
+
+    public function getRenderStatusCode() {
+        return $this->renderStatusCode;
+    }
+
+    protected function setRenderStatusCode($renderStatusCode) {
+        $this->renderStatusCode = $renderStatusCode;
+
+        return $this;
+    }
+
+    public function getRenderStatusMessage() {
+        return $this->renderStatusMessage;
+    }
+
+    protected function setRenderStatusMessage($renderStatusMessage) {
+        $this->renderStatusMessage = $renderStatusMessage;
+
+        return $this;
+    }
+
+    public function getRenderPercent() {
+        return $this->renderPercent;
+    }
+
+    protected function setRenderPercent($renderPercent) {
+        $this->renderPercent = $renderPercent;
+
+        return $this;
+    }
+
+    protected function parseRenderStatus() {
+        $status = $this->getRenderStatus();
+
+        $matches = array();
+        preg_match('/\d+(\.\d+)?(?=%)/', $status, $matches);
+
+        $this->setRenderStatusCode(substr($status, 0, 3));
+        $this->setRenderStatusMessage(substr($status, 4) ?: "Ожидание ответа от сервера печати");
+        $this->setRenderPercent(isset($matches[0]) ? $matches[0] : null);
+    }
+
+    protected function getRedisClient() {
+
+        $parameters = [$this->connectionOptions["redis"]];
+        $options = ['cluster' => 'redis'];
+        $redis = new \Predis\Client($parameters, $options);
+
+        return $redis;
+    }
+    public function checkRender() {
+
+        $redis = $this->getRedisClient();
+
+        $this->setRendered($redis->exists($this->getRenderSessionId()));
+        $this->setRenderStatus($redis->get("ST:" . $this->getRenderSessionId()));
+        $this->parseRenderStatus();
+
+        return $this->isRendered();
+    }
+
+    public function getRenderContent() {
+
+        $redis = $this->getRedisClient();
+
+        return base64_decode($redis->get($this->getRenderSessionId()));
+    }
 
     public function __construct($templateId, $connectionOptions = array()) {
         $this->setTemplateId($templateId);
@@ -74,6 +187,22 @@ class Document implements IDocument {
     }
     public function getPriority() {
         return $this->priority;
+    }
+
+    public function setAsync($isAsync) {
+        $this->isAsync = $isAsync;
+        return $this;
+    }
+    public function isAsync() {
+        return $this->isAsync;
+    }
+
+    public function setCallbackUrl($callbackUrl) {
+        $this->callbackUrl = $callbackUrl;
+        return $this;
+    }
+    public function getCallbackUrl() {
+        return $this->callbackUrl;
     }
 
     public function setConnectionOptions($connectionOptions) {
@@ -242,6 +371,9 @@ class Document implements IDocument {
         $post["priority"] = $this->priority;
         $post["data"] = json_encode($this->fields);
 
+        if ($this->isAsync()) {
+            $post["url"] = $this->getCallbackUrl();
+        }
         return http_build_query($post);
     }
 
@@ -263,12 +395,33 @@ class Document implements IDocument {
 
     public function getPDFContent() {
         $postData = $this->getPostData();
-
+// var_dump($postData);die;
         $result = self::performRequest($this->connectionOptions["url"], $postData);
+var_dump($result);die;
 
         return $result;
     }
 
+
+    public function asyncRender() {
+        $postData = $this->getPostData();
+
+        $result = self::performRequest($this->connectionOptions["url"], $postData);
+
+        $this->setRenderSessionId(trim($result));
+
+        return $this->getRenderSessionId();
+    }
+
+    public function getRenderSessionId() {
+        return $this->renderSessionId;
+    }
+
+    public function setRenderSessionId($renderSessionId) {
+        $this->renderSessionId = $renderSessionId;
+
+        return $this;
+    }
 
     /**
      * Gets the template description.
