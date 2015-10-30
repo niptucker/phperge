@@ -395,9 +395,7 @@ class Document implements IDocument {
 
     public function getPDFContent() {
         $postData = $this->getPostData();
-// var_dump($postData);die;
         $result = self::performRequest($this->connectionOptions["url"], $postData);
-var_dump($result);die;
 
         return $result;
     }
